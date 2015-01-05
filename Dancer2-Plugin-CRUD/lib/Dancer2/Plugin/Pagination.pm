@@ -105,8 +105,7 @@ THe options are defined in the ng-grid on the controller.
 sub get_lookups {
   my ( $self, $store, $table, $map, $where, $columns ) = @_;
   my $columm_map = $columns ? { columns => $columns } : $columns;
-  return &map_fields( $map,
-                     $store->resultset($table)->search( $where, $columm_map ) );
+  return &map_fields( $map, $store->resultset($table)->search( $where, $columm_map ) );
 }
 
 sub mapper {
@@ -139,7 +138,7 @@ sub map_field {
     $base = $base->$method if $base;
     printf "      : %s->%s traverse\n", 'base', $method
       if $DEBUG_RESULTSET
-      and $DEBUG_MAPPING;
+        and $DEBUG_MAPPING;
     return $base;
   }
   elsif ( ref($method) eq 'HASH' ) {
@@ -151,10 +150,9 @@ sub map_field {
       my %bag = ();
       foreach my $hashkeys ( keys %{$method} ) {
         $bag{ $method->{$hashkeys} } = $base->$hashkeys;
-        printf "HASH : %s->%s baging ref(%s)\n", $method, $hashkeys,
-          ref( $base->$hashkeys )
+        printf "HASH : %s->%s baging ref(%s)\n", $method, $hashkeys, ref( $base->$hashkeys )
           if $DEBUG_RESULTSET
-          and $DEBUG_MAPPING;
+            and $DEBUG_MAPPING;
       }
 
       #print Dumper( \%bag );
@@ -173,10 +171,9 @@ sub map_field {
       my %bag = ();
       foreach my $hashkeys ( @{$method} ) {
         $bag{$hashkeys} = $base->$hashkeys;
-        printf "ARRAY: %s->%s baging ref(%s)\n", $method, $hashkeys,
-          ref( $base->$hashkeys )
+        printf "ARRAY: %s->%s baging ref(%s)\n", $method, $hashkeys, ref( $base->$hashkeys )
           if $DEBUG_RESULTSET
-          and $DEBUG_MAPPING;
+            and $DEBUG_MAPPING;
       }
 
       #print Dumper( \%bag );
@@ -188,59 +185,8 @@ sub map_field {
   }
 }
 
-#sub map_fields {
-#  my ( $field_defs, @rs, $calculated_sub ) = @_;
-#
-#  print "MAPPING:" . Dumper($field_defs);
-#  my @result = ();
-#  foreach my $row (@rs) {
-#    my $rec = {};
-#    if (!blessed($row)) {
-#      next;
-#    }
-#
-#    while ( my ( $k, $v ) = each %$field_defs ) {
-#
-#      #printf "%s => %s\n", $k, ref($v);
-#      if ( ref($v) eq 'ARRAY' ) {
-#        print "\nARRAY: " if $DEBUG_RESULTSET;
-#        my $base  = $row;
-#        my $value = undef;
-#        foreach my $method (@$v) {
-#          $base = &map_field( $k, $method, $base );
-#        }
-#        $rec->{$k} = $base;
-#      }
-#      elsif ( ref($v) eq 'HASH' ) {
-#        print "\nHASH : " if $DEBUG_RESULTSET;
-#
-#        my $base  = $row;
-#        $rec->{$k} = &map_field($k,$v,$base);
-#      }
-#      else {
-#        print "\n\tVAR  " if $DEBUG_RESULTSET;
-#        printf " : %s->%s ",$v, $k if $DEBUG_RESULTSET;
-#        if ($row->can($k)) {
-#          printf " baging ref(%s)", ref($row->$k) if $DEBUG_RESULTSET;
-#        } else
-#        {
-#          #printf " baging %s", Dumper($row) if $DEBUG_RESULTSET;
-#        }
-#        $rec->{$v} = $row->$k;
-#      }
-#    }
-#    if ($calculated_sub) {
-#      $calculated_sub->($rec);
-#    }
-#    push @result, $rec;
-#  }
-#  print Dumper(\@result) if $DEBUG_RESULTSET;
-#  return \@result;
-#}
-
 sub pagination {
-  my ( $self, $store, $table, $mapping, $subselect, $preselect,
-       $calculated_sub ) = @_;
+  my ( $self, $store, $table, $mapping, $subselect, $preselect, $calculated_sub ) = @_;
 
   my %params = $self->params;
   print "PARAMS:" . Dumper( \%params );
@@ -254,13 +200,14 @@ sub pagination {
   my $filter = $self->from_json( $self->params->{'filter'} );
   my $sort   = $self->from_json( $self->params->{'sort'} );
 
-  my $limit  = $pager  && $pager->{'pageSize'}     || $DEFAULT_PAGE_SIZE;
-  my $pagenr = $pager  && $pager->{'currentPage'}  || 1;
-  my $type   = $filter && $filter->{'matchType'}   || 'any';
-  my $text   = $filter && $filter->{'filterText'}  || '';
-  my $field  = $filter && $filter->{'matchFields'} || ['name'];
-  my $sortFields    = $sort && $sort->{'fields'};
-  my $sortDirection = $sort && $sort->{'directions'} || ['ASC'];
+  my $limit         = $pager  && $pager->{'pageSize'}     || $DEFAULT_PAGE_SIZE;
+  my $pagenr        = $pager  && $pager->{'currentPage'}  || 1;
+  my $type          = $filter && $filter->{'matchType'}   || 'any';
+  my $text          = $filter && $filter->{'filterText'}  || '';
+  my $field         = $filter && $filter->{'matchFields'} || ['name'];
+  my $ignorecase    = $filter && $filter->{'ignorecase'}  || 1;
+  my $sortFields    = $sort   && $sort->{'fields'};
+  my $sortDirection = $sort   && $sort->{'directions'}    || ['ASC'];
 
   # establish default filtering
   my @column = ();
@@ -287,23 +234,39 @@ sub pagination {
     if ( $type =~ /all/ ) {
       foreach my $f (@column) {
         next unless $f;
-        $where{"me.$f"}{'-like'} = $text . '%';
+        if ($ignorecase) {
+          $where{"LOWER(me.$f)"}{'-like'} = lc $text . '%';
+        }
+        else {
+          $where{"me.$f"}{'-like'} = $text . '%';
+        }
+
       }
     }
     else {
-      print "<><<<<<<<<<<<<<<<<<"
-        . Dumper( $text, \@column, \@$field, $mapping );
+      print "<><<<<<<<<<<<<<<<<<" . Dumper( $text, \@column, \@$field, $mapping ) if 0 > 1;
       if ( scalar @column > 1 ) {
         foreach my $f (@column) {
           next unless $f;
-          push @{ $where{'-or'} }, { "me.$f" => { '-like' => $text . '%' } };
+          if ($ignorecase) {
+            push @{ $where{'-or'} }, { "LOWER(me.$f)" => { '-like' => lc $text . '%' } };
+          }
+          else {
+            push @{ $where{'-or'} }, { "me.$f" => { '-like' => $text . '%' } };
+          }
 
         }
       }
       else {
         foreach my $f (@column) {
           next unless $f;
-          $where{"me.$f"}{'-like'} = $text . '%';
+          if ($ignorecase) {
+            $where{"LOWER(me.$f)"}{'-like'} = $text . '%';
+          }
+          else {
+            $where{"me.$f"}{'-like'} = $text . '%';
+
+          }
         }
       }
     }
@@ -324,7 +287,7 @@ sub pagination {
   print "OPTINS:" . Dumper( \%options );
   print "WHERE : " . Dumper( \%where );
   print "ORDER : " . Dumper( \@order );
-  my @rs    = $store->resultset($table)->search( \%where, \%options );
+  my @rs = $store->resultset($table)->search( \%where, \%options );
   my $count = $store->resultset($table)->search( \%where )->count;
 
   my $result = &map_fields( $mapping, @rs, $calculated_sub );
