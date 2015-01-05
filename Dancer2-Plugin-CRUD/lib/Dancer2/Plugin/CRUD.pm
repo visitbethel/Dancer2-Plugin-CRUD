@@ -34,8 +34,7 @@ sub create_rec {
   my %fields = %{$mapping};
 
   %fields = reverse %fields;
-  my %new_record =
-    ref( $self->new_record ) eq 'CODE' ? $self->new_record->() : ();
+  my %new_record = ref( $self->new_record ) eq 'CODE' ? $self->new_record->() : ();
 
   print "NEW EMPTY RECORD: ", Dumper( \%new_record );
 
@@ -49,14 +48,13 @@ sub create_rec {
       $new_record{$method} = $record_json->{$strref};
     }
   }
-  &logf( "-->%s, NEWRECORD: %s, NEWJSON: %s",
-         Dumper( \%fields ),
-         Dumper( \%new_record ),
-         Dumper($record_json) );
+  &logf( "-->%s, NEWRECORD: %s, NEWJSON: %s", Dumper( \%fields ), Dumper( \%new_record ), Dumper($record_json) );
 
   my $return;
   my $transactionref = sub {
     my $_record = $store->resultset($table)->create( \%new_record );
+
+    #&logf( Dumper($_record));
 
     # apply complex changes first.
     if ( $_record->can('complex_update_or_create') ) {
@@ -69,12 +67,12 @@ sub create_rec {
   my $record;
   try {
     $record = $store->txn_do($transactionref);
-    }
-    catch {
+  }
+  catch {
     my $error = shift;
     print $error;
     DBIx::Class::Exception->throw('[[Record already exists!]]');
-    };
+  };
   return &map_row( $mapping, $record );
 
 }
@@ -94,13 +92,6 @@ sub read_rec {
   return $mp;
 }
 
-#sub new_rec {
-#  my ( $self, $coderef ) = @_;
-#  print Dumper(), ref($coderef);
-#  if ( ref($coderef) eq 'CODE' ) {
-#    $self->new_record($coderef);
-#  }
-#}
 
 =head
   ___ UPDATE ___
@@ -114,7 +105,7 @@ sub update_rec {
   my $transactionref = sub {
     my $_record = $class->find( { $pk => $record_json->{'id'} } );
 
-    print "record to update: ", Dumper($record_json);
+    #print "record to update: ", Dumper($record_json);
 
     # apply complex changes first.
     if ( $_record->can('complex_update_or_create') ) {
@@ -128,11 +119,10 @@ sub update_rec {
   my $record;
   try {
     $record = $store->txn_do($transactionref);
-    }
-    catch {
-    DBIx::Class::Exception->throw(
-                             '[[Record could not be updated!]]: Reason:' . $_ );
-    };
+  }
+  catch {
+    DBIx::Class::Exception->throw( '[[Record could not be updated!]]: Reason:' . $_ );
+  };
   return &map_row( $mapping, $record );
 }
 
@@ -153,7 +143,7 @@ sub process_rec {
     &logf( "-->[key----] = %s\n", keys %$record_json );
     if ( defined $record_json->{$dbfield} ) {
       if ( $record->can($method) ) {
-        &logf("...1\n");
+        &logf("...1 set $method = $record_json->{$dbfield}\n");
         $record->$method( $record_json->{$dbfield} ) if ref($method) eq '';
       }
       else {
@@ -162,22 +152,22 @@ sub process_rec {
     }
     else {
 
-#      if ( $dbfield =~ /^ARRAY/ ) {
-#        my $property = $method;
-#        printf "...2 %s \n", $property;
-#        next unless $record_json->{$property};
-#        printf "...4 %s = %s [ %s ]\n", $property, $record_json->{$property}, $mapping->{$property};
-#        # find the first element relationship links and take that as the method for the resultset.
-#        $method = $mapping->{$property}->[0];
-#        printf "%s  -> %s->map=%s\n", $property,$method,$dbfield; # if $DEBUG_MAPPING;
-#        $record->$method( $record_json->{$property});
-#        printf "...5 end of \n";
-#      }
-#      else {
-#        printf "...6\n";
-#        printf "MAPPING ERROR %s ( %s ) = %s\n", $dbfield,
-#          $record_json->{$dbfield} ? $record_json->{$dbfield} : '???', $method;
-#      }
+      if ( $dbfield =~ /^ARRAY/ ) {
+        my $property = $method;
+        printf "...2 %s \n", $property;
+        next unless $record_json->{$property};
+        printf "...4 %s = %s [ %s ]\n", $property, $record_json->{$property}, $mapping->{$property};
+
+        # find the first element relationship links and take that as the method for the resultset.
+        $method = $mapping->{$property}->[0];
+        printf "%s -> method=%s->map=%s, [%s]\n", $property, $method, $dbfield, ref($record);    # if $DEBUG_MAPPING;
+        $record->$method( $record_json->{$property} );
+        printf "...5 end of \n";
+      }
+      else {
+        printf "...6\n";
+        printf "MAPPING ERROR %s ( %s ) = %s\n", $dbfield, $record_json->{$dbfield} ? $record_json->{$dbfield} : '???', $method;
+      }
     }
   }
   return $record->update();
@@ -210,11 +200,10 @@ sub delete_rec {
   my $record;
   try {
     $record = $store->txn_do($txxxxxxref);
-    }
-    catch {
-    DBIx::Class::Exception->throw(
-                             '[[Record could not be deleted!]]: Reason:' . $_ );
-    };
+  }
+  catch {
+    DBIx::Class::Exception->throw( '[[Record could not be deleted!]]: Reason:' . $_ );
+  };
 
   return 1;
 }
