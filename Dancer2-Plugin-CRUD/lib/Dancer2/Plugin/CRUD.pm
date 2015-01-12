@@ -9,7 +9,7 @@ with 'Dancer2::Plugin::MapperUtils';
 our $AUTHORITY         = 'KAAN';
 our $VERSION           = '0.01';
 our $DEFAULT_PAGE_SIZE = 5;
-our $DEBUG_MAPPING     = 1;
+our $DEBUG_MAPPING     = 0;
 our $logger            = Dancer2::Logger::Console->new;
 
 has new_record => ( is => 'rw', default => sub { my %h = (); return \%h; } );
@@ -36,8 +36,7 @@ sub create_rec {
   %fields = reverse %fields;
   my %new_record = ref( $self->new_record ) eq 'CODE' ? $self->new_record->() : ();
 
-  print "NEW EMPTY RECORD: ", Dumper( \%new_record );
-
+  &logf("NEW EMPTY RECORD: ", Dumper( \%new_record ));
   foreach my $dbfield ( keys %fields ) {
     my $method = $fields{$dbfield};
     my $strref = sprintf "%s", $dbfield;
@@ -70,7 +69,7 @@ sub create_rec {
   }
   catch {
     my $error = shift;
-    print $error;
+    &logf($error);
     DBIx::Class::Exception->throw('[[Record already exists!]]');
   };
   return &map_row( $mapping, $record );
@@ -105,8 +104,7 @@ sub update_rec {
   my $transactionref = sub {
     my $_record = $class->find( { $pk => $record_json->{'id'} } );
 
-    #print "record to update: ", Dumper($record_json);
-
+    &logf("record to update: ", Dumper($record_json));
     # apply complex changes first.
     if ( $_record->can('complex_update_or_create') ) {
       $_record->complex_update_or_create( $record_json, $mapping );

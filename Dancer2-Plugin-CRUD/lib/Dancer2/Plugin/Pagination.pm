@@ -155,7 +155,7 @@ sub map_field {
             and $DEBUG_MAPPING;
       }
 
-      #print Dumper( \%bag );
+      #&logf(Dumper( \%bag ));
       $value = \%bag;
     }
     else {
@@ -176,7 +176,7 @@ sub map_field {
             and $DEBUG_MAPPING;
       }
 
-      #print Dumper( \%bag );
+      #&logf(Dumper( \%bag ));
       $value = \%bag;
     }
     else {
@@ -189,7 +189,7 @@ sub pagination {
   my ( $self, $store, $table, $mapping, $subselect, $preselect, $calculated_sub ) = @_;
 
   my %params = $self->params;
-  print "PARAMS:" . Dumper( \%params );
+  &logf("PARAMS:" . Dumper( \%params ));
   unless ($mapping) {
     die( "missing mapping for " . $table );
     return 1;
@@ -244,7 +244,7 @@ sub pagination {
       }
     }
     else {
-      print "<><<<<<<<<<<<<<<<<<" . Dumper( $text, \@column, \@$field, $mapping ) if 0 > 1;
+      &logf("<><<<<<<<<<<<<<<<<<" . Dumper( $text, \@column, \@$field, $mapping )) if $DEBUG_RESULTSET;
       if ( scalar @column > 1 ) {
         foreach my $f (@column) {
           next unless $f;
@@ -284,21 +284,45 @@ sub pagination {
   if ( $subselect and ref($subselect) eq 'HASH' ) {
     %options = ( %options, %$subselect );
   }
-  print "OPTINS:" . Dumper( \%options );
-  print "WHERE : " . Dumper( \%where );
-  print "ORDER : " . Dumper( \@order );
+  &logf("OPTINS:" . Dumper( \%options ));
+  &logf("WHERE : " . Dumper( \%where ));
+  &logf("ORDER : " . Dumper( \@order ));
   my @rs = $store->resultset($table)->search( \%where, \%options );
   my $count = $store->resultset($table)->search( \%where )->count;
 
   my $result = &map_fields( $mapping, @rs, $calculated_sub );
-  print "return " . scalar @$result . " of " . $count . " records.\n";
-
-  #print Dumper($result);
+  &logf("return " . scalar @$result . " of " . $count . " records.\n");
+  #&logf(Dumper($result));
   return { 'totalItems' => $count, 'items' => $result };
 }
 
+
+=head
+
+=cut
+sub merge_pagers {
+  my %resultset = ( 'totalItems'=>0, 'items'=>[]);
+  foreach my $set (@_) {
+    if ($set and $set->{'totalItems'}) {
+      $resultset{'totalItems'} += $set->{'totalItems'};
+      my @list = @{$set->{'items'}};
+      print "\n>>>>>>>>>>>>>", ref($resultset{'items'});
+      my @totallist = @{$resultset{'items'}};
+      @list = (@list, @totallist);
+      $resultset{'items'} = \@list;
+    }
+  }
+  return \%resultset;
+}
+
+sub logf {
+  printf @_ if $DEBUG_MAPPING;
+}
+
+
 register get_lookups => \&get_lookups;
 register pager       => \&pagination;
+register merge_pagers => \&merge_pagers;
 register mapper      => \&mapper;
 register_plugin for_versions => [ 1, 2 ];
 
