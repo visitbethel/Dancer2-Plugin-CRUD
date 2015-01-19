@@ -13,7 +13,7 @@ our $AUTHORITY         = 'KAAN';
 our $VERSION           = '0.01';
 our $DEFAULT_PAGE_SIZE = 5;
 our $DEBUG_RESULTSET   = 0;
-our $DEBUG_MAPPING     = 0;
+our $DEBUG_MAPPING     = 1;
 our $logger            = Dancer2::Logger::Console->new;
 
 =head
@@ -108,6 +108,10 @@ sub get_lookups {
   return &map_fields( $map, $store->resultset($table)->search( $where, $columm_map ) );
 }
 
+
+=head
+  ------------- mapper -------------  ------------- 
+=cut
 sub mapper {
   my ( $self, $defs, @rs ) = @_;
   return &map_fields( $defs, @rs );
@@ -127,9 +131,8 @@ sub mapper {
    json_field : [
       'table2_ref' : { 'id' : table1_ref->table2_ref->id, 'desc' : table1_ref->table2_ref->desc }
     ]
-
+  ------------- map field -------------  ------------- 
 =cut
-
 sub map_field {
   my ( $k, $method, $base ) = @_;
   my $value = undef;
@@ -185,6 +188,9 @@ sub map_field {
   }
 }
 
+=head
+  ------------- pagination -------------  ------------- 
+=cut
 sub pagination {
   my ( $self, $store, $table, $mapping, $subselect, $preselect, $calculated_sub ) = @_;
 
@@ -298,12 +304,12 @@ sub pagination {
 
 
 =head
-
+  ------------- merge pages / union -------------  ------------- 
 =cut
 sub merge_pagers {
   my %resultset = ( 'totalItems'=>0, 'items'=>[]);
   foreach my $set (@_) {
-    if ($set and $set->{'totalItems'}) {
+    if ($set and ref($set) eq 'HASH' and $set->{'totalItems'}) {
       $resultset{'totalItems'} += $set->{'totalItems'};
       my @list = @{$set->{'items'}};
       print "\n>>>>>>>>>>>>>", ref($resultset{'items'});
