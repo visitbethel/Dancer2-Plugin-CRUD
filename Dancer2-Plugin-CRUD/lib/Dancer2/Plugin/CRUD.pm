@@ -4,23 +4,24 @@ use Dancer2::Plugin;
 use Dancer2::Logger::Console;
 use Data::Dumper;
 use Dancer2::Plugin::MapperUtils qw(map_row);
+use Scalar::Util qw(blessed);
 use Try::Tiny;
 with 'Dancer2::Plugin::MapperUtils';
 our $AUTHORITY         = 'KAAN';
 our $VERSION           = '0.01';
 our $DEFAULT_PAGE_SIZE = 5;
-our $DEBUG_MAPPING     = 0;
+our $DEBUG_MAPPING     = 1;
 our $logger            = Dancer2::Logger::Console->new;
 
-has new_record => ( is => 'rw', default => sub { my %h = (); return \%h; } );
+has new_record_mapping => ( is => 'ro', default => sub { return {} } );
 
 =head
   ___ NEW RECORD ___
 =cut
 
 sub new_rec {
-  my ( $self, $coderef ) = @_;
-  $self->new_record($coderef);
+  my ( $self, $entity, $coderef ) = @_;
+  $self->new_record_mapping->{$entity} = $coderef;
 }
 
 =head
@@ -56,7 +57,7 @@ sub create_rec {
     #&logf( Dumper($_record));
 
     # apply complex changes first.
-    if ( $_record->can('complex_update_or_create') ) {
+    if (blessed($_record) and $_record->can('complex_update_or_create') ) {
       $_record->complex_update_or_create( $record_json, $mapping );
     }
     $self->process_rec( $_record, $mapping, $record_json );
@@ -106,7 +107,8 @@ sub update_rec {
 
     &logf("record to update: ", Dumper($record_json));
     # apply complex changes first.
-    if ( $_record->can('complex_update_or_create') ) {
+    if (blessed($_record) and $_record->can('complex_update_or_create') ) {
+    	
       $_record->complex_update_or_create( $record_json, $mapping );
     }
 
@@ -158,8 +160,17 @@ sub process_rec {
 
         # find the first element relationship links and take that as the method for the resultset.
         $method = $mapping->{$property}->[0];
+        print "...4b\n";
         printf "%s -> method=%s->map=%s, [%s]\n", $property, $method, $dbfield, ref($record);    # if $DEBUG_MAPPING;
-        $record->$method( $record_json->{$property} );
+        printf "...4c -> record = blessed ? %s\n", blessed($record);
+        if (blessed($record) and $record->can($method) ) {
+        	if (ref $record_json->{$property} eq '') {
+		        $record->$method( $record_json->{$property} );
+        	}
+        }
+        else {
+        	print "$record->$method( $record_json->{$property}  ) FAILED \n";
+        }
         printf "...5 end of \n";
       }
       else {
@@ -189,7 +200,7 @@ sub delete_rec {
     unless ($record) {
       DBIx::Class::Exception->throw('[[Record not found!]]');
     }
-    if ( $record->can('complex_delete') ) {
+    if (blessed($record) and $record->can('complex_delete') ) {
       $record->complex_delete($id);
     }
     return $record->delete();
