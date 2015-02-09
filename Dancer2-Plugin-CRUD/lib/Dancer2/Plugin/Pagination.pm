@@ -7,6 +7,7 @@ use Dancer2::Plugin;
 use Dancer2::Logger::Console;
 use Data::Dumper;
 use Dancer2::Plugin::MapperUtils qw/map_fields/;
+use JSON::PP qw(encode_json decode_json);
 use Scalar::Util qw(blessed);
 
 our $AUTHORITY         = 'KAAN';
@@ -202,9 +203,9 @@ sub pagination {
   }
 
   # deserialize the filter, page and sort options.
-  my $pager  = $self->from_json( $self->params->{'pager'} );
-  my $filter = $self->from_json( $self->params->{'filter'} );
-  my $sort   = $self->from_json( $self->params->{'sort'} );
+  my $pager  = $self->params->{'pager'} ? decode_json( $self->params->{'pager'}) : {};
+  my $filter = $self->params->{'filter'} ? decode_json( $self->params->{'filter'}) : {};
+  my $sort   =  $self->params->{'sort'} ? decode_json(  $self->params->{'sort'} ) : {};
 
   my $limit         = $pager  && $pager->{'pageSize'}     || $DEFAULT_PAGE_SIZE;
   my $pagenr        = $pager  && $pager->{'currentPage'}  || 1;
