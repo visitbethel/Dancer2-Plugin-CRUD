@@ -27,7 +27,6 @@ sub new_rec {
 =head
   ___ CREATE ___
 =cut
-
 sub create_rec {
   my ( $self, $store, $table, $mapping, $record_json ) = @_;
   my $class  = $store->resultset($table);
@@ -35,7 +34,7 @@ sub create_rec {
   my %fields = %{$mapping};
 
   %fields = reverse %fields;
-  my %new_record = ref( $self->new_record ) eq 'CODE' ? $self->new_record->() : ();
+  my %new_record = ref( $self->new_rec($table) ) eq 'CODE' ? $self->new_rec->($table) : ();
 
   &logf("NEW EMPTY RECORD: ", Dumper( \%new_record ));
   foreach my $dbfield ( keys %fields ) {
