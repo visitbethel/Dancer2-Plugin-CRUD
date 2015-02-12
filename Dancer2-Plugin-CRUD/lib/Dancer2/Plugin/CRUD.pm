@@ -4,6 +4,7 @@ use Dancer2::Plugin;
 use Dancer2::Logger::Console;
 use Data::Dumper;
 use Dancer2::Plugin::MapperUtils qw(map_row);
+use Carp;
 use Scalar::Util qw(blessed);
 use Try::Tiny;
 with 'Dancer2::Plugin::MapperUtils';
@@ -19,10 +20,21 @@ has new_record_mapping => ( is => 'ro', default => sub { return {} } );
   ___ NEW RECORD ___
 =cut
 
-sub new_rec {
+sub register_rec {
   my ( $self, $entity, $coderef ) = @_;
-  $self->new_record_mapping->{$entity} = $coderef;
+  if ( $coderef and $entity and not $self->new_record_mapping->{lc $entity} ) {
+    $self->new_record_mapping->{lc $entity} = $coderef;
+  }
+  else {
+    carp "Mapping for $entity already was registered!";
+  }
 }
+
+sub _new_record {
+  my ( $self, $entity ) = @_;
+  return $self->new_record_mapping->{$entity} ? $self->new_record_mapping->{$entity}->() : ();
+}
+
 
 =head
   ___ CREATE ___
@@ -34,9 +46,11 @@ sub create_rec {
   my %fields = %{$mapping};
 
   %fields = reverse %fields;
-  my %new_record = ref( $self->new_rec($table) ) eq 'CODE' ? $self->new_rec->($table) : ();
 
-  &logf("NEW EMPTY RECORD: ", Dumper( \%new_record ));
+  print Dumper($self->_new_record(lc $table));
+  my %new_record = $self->_new_record(lc $table);
+
+  &logf("\nNEW EMPTY RECORD: (", lc $table, ")", Dumper( \%new_record ));
   foreach my $dbfield ( keys %fields ) {
     my $method = $fields{$dbfield};
     my $strref = sprintf "%s", $dbfield;
@@ -47,7 +61,7 @@ sub create_rec {
       $new_record{$method} = $record_json->{$strref};
     }
   }
-  &logf( "-->%s, NEWRECORD: %s, NEWJSON: %s", Dumper( \%fields ), Dumper( \%new_record ), Dumper($record_json) );
+  &logf( "\n-->%s, NEWRECORD: %s, NEWJSON: %s", Dumper( \%fields ), Dumper( \%new_record ), Dumper($record_json) );
 
   my $return;
   my $transactionref = sub {
@@ -220,7 +234,7 @@ register create_record       => \&create_rec;
 register read_record         => \&read_rec;
 register update_record       => \&update_rec;
 register delete_record       => \&delete_rec;
-register register_new_record => \&new_rec;
+register register_new_record => \&register_rec;
 
 register_plugin for_versions => [ 1, 2 ];
 
