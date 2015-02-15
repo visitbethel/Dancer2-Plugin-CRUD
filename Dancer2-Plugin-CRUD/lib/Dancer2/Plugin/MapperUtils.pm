@@ -37,8 +37,8 @@ sub map_field {
   my $value = undef;
 
   if ( ref($method) eq '' ) {
-    $base = $base->$method if $base;
     &logf( "      : %s->%s traverse\n", 'base', $method );
+    $base = $base->$method if $base;
     return $base;
   }
   elsif ( ref($method) eq 'HASH' ) {
@@ -49,9 +49,9 @@ sub map_field {
       # array ref, multiple values in one
       my %bag = ();
       foreach my $hashkeys ( keys %{$method} ) {
-        $bag{ $method->{$hashkeys} } = $base->$hashkeys;
         &logf( "HASH : %s->%s baging ref(%s)\n",
                $method, $hashkeys, ref( $base->$hashkeys ) );
+        $bag{ $method->{$hashkeys} } = $base->$hashkeys;
       }
       $value = \%bag;
     }
