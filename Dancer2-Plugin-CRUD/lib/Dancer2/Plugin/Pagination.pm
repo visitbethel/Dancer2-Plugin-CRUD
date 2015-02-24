@@ -14,7 +14,7 @@ our $AUTHORITY         = 'KAAN';
 our $VERSION           = '0.01';
 our $DEFAULT_PAGE_SIZE = 5;
 our $DEBUG_RESULTSET   = 0;
-our $DEBUG_MAPPING     = 0;
+our $DEBUG_MAPPING     = 1;
 our $logger            = Dancer2::Logger::Console->new;
 
 =head
@@ -213,11 +213,12 @@ sub pagination {
   my $text          = $filter && $filter->{'filterText'}  || '';
   my $field         = $filter && $filter->{'matchFields'} || ['name'];
   my $ignorecase    = $filter && $filter->{'ignorecase'}  || 1;
-  my $sortFields    = $sort   && $sort->{'fields'};
-  my $sortDirection = $sort   && $sort->{'directions'}    || ['ASC'];
+  my $sortFields    = $sort   && $sort->{'field'};
+  my $sortDirection = $sort   && $sort->{'direction'}    || ['ASC'];
 
   # establish default filtering
   my @column = ();
+  my %rev = reverse %{$mapping};
 
   foreach my $expr (@$field) {
     my ( $k, $dbfield ) = split /\./, $expr;    #/
@@ -227,10 +228,10 @@ sub pagination {
       push @column, $rmap{$dbfield};
     }
     else {
-      my %rev = reverse %{$mapping};
       push @column, $rev{$k};
     }
   }
+
 
   #
   #  my @column = keys %column;
@@ -281,6 +282,13 @@ sub pagination {
   my @order = ();
 
   #@order = map { $mapping->{$_} . ' ASC' } @$sortFields if $sortFields;
+  foreach my $field (@{$sortFields}) {
+  	if ($mapping->{$rev{$field}}) {
+  		my $fld = sprintf "%s %s", $rev{$field}, $sortDirection->[0];
+  		push @order, $fld;
+  	}
+  }
+  print Dumper(">>>sorting:", $sort, $sortFields,  \@order);
 
   my %options = (
     page     => $pagenr,
@@ -291,9 +299,9 @@ sub pagination {
   if ( $subselect and ref($subselect) eq 'HASH' ) {
     %options = ( %options, %$subselect );
   }
-  &logf("OPTINS:" . Dumper( \%options ));
-  &logf("WHERE : " . Dumper( \%where ));
-  &logf("ORDER : " . Dumper( \@order ));
+  &logf("OPTIONS:" . Dumper( \%options ));
+  &logf("WHERE  : " . Dumper( \%where ));
+  &logf("ORDER  : " . Dumper( \@order ));
   my @rs = $store->resultset($table)->search( \%where, \%options );
   my $count = $store->resultset($table)->search( \%where )->count;
 
