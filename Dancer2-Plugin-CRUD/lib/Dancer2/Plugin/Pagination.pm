@@ -14,7 +14,7 @@ our $AUTHORITY         = 'KAAN';
 our $VERSION           = '0.01';
 our $DEFAULT_PAGE_SIZE = 5;
 our $DEBUG_RESULTSET   = 0;
-our $DEBUG_MAPPING     = 1;
+our $DEBUG_MAPPING     = 0;
 our $logger            = Dancer2::Logger::Console->new;
 
 =head
