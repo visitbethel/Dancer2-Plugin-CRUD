@@ -243,7 +243,7 @@ sub pagination {
       foreach my $f (@column) {
         next unless $f;
         if ($ignorecase) {
-          $where{"LOWER(me.$f)"}{'-like'} = lc $text . '%';
+          $where{"LOWER(me.$f)"}{'-like'} = lc $text  . '%';
         }
         else {
           $where{"me.$f"}{'-like'} = $text . '%';
@@ -257,7 +257,7 @@ sub pagination {
         foreach my $f (@column) {
           next unless $f;
           if ($ignorecase) {
-            push @{ $where{'-or'} }, { "LOWER(me.$f)" => { '-like' => lc $text . '%' } };
+            push @{ $where{'-or'} }, { "LOWER(me.$f)" => { '-like' =>  $text  . '%' } };
           }
           else {
             push @{ $where{'-or'} }, { "me.$f" => { '-like' => $text . '%' } };
@@ -269,7 +269,7 @@ sub pagination {
         foreach my $f (@column) {
           next unless $f;
           if ($ignorecase) {
-            $where{"LOWER(me.$f)"}{'-like'} = $text . '%';
+            $where{"LOWER(me.$f)"}{'-like'} = lc $text . '%';
           }
           else {
             $where{"me.$f"}{'-like'} = $text . '%';
