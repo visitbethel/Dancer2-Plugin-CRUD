@@ -228,8 +228,20 @@ sub pagination {
 	my $sortDirection = $sort && $sort->{'direction'} || ['ASC'];
 
 	# establish default filtering
-	my @column = ();
-	my %rev    = reverse %{$mapping};
+	my @column  = ();
+	my %rev     = reverse %{$mapping};
+	my %sortrev = ();
+	foreach my $r ( keys %{$mapping} ) {
+		if ( ref $mapping->{$r} eq 'HASH' ) {
+			foreach my $sr ( keys %{ $mapping->{$r} } ) {
+				$sortrev{ sprintf "%s.%s", $r, $mapping->{$r}->{$sr} } = $sr;
+			}
+		}
+		else {
+			$sortrev{ $mapping->{$r} } = $r;
+		}
+	}
+	#print "SORTREV", Dumper( \%sortrev );
 
 	foreach my $expr (@$field) {
 		my ( $k, $dbfield ) = split /\./, $expr;    #/
@@ -333,13 +345,18 @@ sub pagination {
 	my @order = ();
 
 	#@order = map { $mapping->{$_} . ' ASC' } @$sortFields if $sortFields;
-	foreach my $field ( @{$sortFields} ) {
-		if ( $mapping->{ $rev{$field} } ) {
-			my $fld = sprintf "%s %s", $rev{$field}, $sortDirection->[0];
+	foreach my $fld ( @{$sortFields} ) {
+		if ( $sortrev{$fld} ) {
+			my $fld = sprintf "%s %s", $sortrev{$fld},
+			  $sortDirection->[0];
 			push @order, $fld;
 		}
+		else {
+			print Dumper("missing rev{$fld}");
+			print Dumper( \%sortrev );
+		}
 	}
-	print Dumper( ">>>sorting:", $sort, $sortFields, \@order );
+	#print Dumper( ">>>sorting:", $sort, $sortFields, \@order );
 
 	my %options = (
 		page     => $pagenr,
