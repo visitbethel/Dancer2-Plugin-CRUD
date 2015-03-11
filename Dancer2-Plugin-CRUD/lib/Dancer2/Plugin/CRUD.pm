@@ -24,6 +24,7 @@ sub register_rec {
   my ( $self, $entity, $coderef ) = @_;
   if ( $coderef and $entity and not $self->new_record_mapping->{lc $entity} ) {
     $self->new_record_mapping->{lc $entity} = $coderef;
+    print "...[CRUD] registering new record entity '$entity'.\n";
   }
   else {
     carp "Mapping for $entity already was registered!";

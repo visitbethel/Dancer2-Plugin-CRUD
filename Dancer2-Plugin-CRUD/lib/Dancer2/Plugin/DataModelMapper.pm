@@ -20,6 +20,8 @@ sub _register_map {
   my ( $self, $entity, $map ) = @_;
   if ( $map and $entity and not $self->mapping->{$entity} ) {
     $self->mapping->{$entity} = $map;
+    print "...[CRUD] registering new model entity '$entity'.\n";
+    
   }
   else {
     carp "Mapping for $entity already was registered!";
