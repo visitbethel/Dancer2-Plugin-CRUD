@@ -346,13 +346,13 @@ sub pagination {
 
 	#@order = map { $mapping->{$_} . ' ASC' } @$sortFields if $sortFields;
 	foreach my $fld ( @{$sortFields} ) {
-		if ( $sortrev{$fld} ) {
+		if ( $fld && $sortrev{$fld} ) {
 			my $fld = sprintf "%s %s", $sortrev{$fld},
 			  $sortDirection->[0];
 			push @order, $fld;
 		}
 		else {
-			print Dumper("missing rev{$fld}");
+			print Dumper("missing rev{$fld}") if $fld;
 			print Dumper( \%sortrev );
 		}
 	}
