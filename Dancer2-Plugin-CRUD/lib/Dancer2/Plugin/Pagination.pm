@@ -6,6 +6,7 @@ use Dancer2;
 use Dancer2::Plugin;
 use Dancer2::Logger::Console;
 use Data::Dumper;
+use Carp qw/carp/;
 use Dancer2::Plugin::MapperUtils qw/map_fields/;
 use JSON::PP qw(encode_json decode_json);
 use Scalar::Util qw(blessed);
@@ -105,6 +106,11 @@ THe options are defined in the ng-grid on the controller.
 
 sub get_lookups {
 	my ( $self, $store, $table, $map, $where, $columns ) = @_;
+	
+	unless ($map) {
+		carp( "missing mapping for lookup of " . $table );
+	}
+	
 	my $columm_map = $columns ? { columns => $columns } : $columns;
 	return &map_fields( $map,
 		$store->resultset($table)->search( $where, $columm_map ) );

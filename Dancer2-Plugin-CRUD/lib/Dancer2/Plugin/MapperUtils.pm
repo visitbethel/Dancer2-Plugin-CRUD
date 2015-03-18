@@ -83,7 +83,12 @@ sub map_field {
 
 sub map_fields {
   my ( $field_defs, @rs ) = @_;
-
+  
+  unless ($field_defs) {
+  	carp "missing mapping for mapping fields.";
+  	return;
+  }
+  
   &logf( "MAPPING:" . Dumper($field_defs) );
   my @result = ();
   foreach my $row (@rs) {

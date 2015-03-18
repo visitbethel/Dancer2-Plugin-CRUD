@@ -11,7 +11,7 @@ with 'Dancer2::Plugin::MapperUtils';
 our $AUTHORITY         = 'KAAN';
 our $VERSION           = '0.01';
 our $DEFAULT_PAGE_SIZE = 5;
-our $DEBUG_MAPPING     = 1;
+our $DEBUG_MAPPING     = 0;
 our $logger            = Dancer2::Logger::Console->new;
 
 has new_record_mapping => ( is => 'ro', default => sub { return {} } );
