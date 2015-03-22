@@ -13,7 +13,7 @@ use Sub::Exporter -setup => {
 };
 
 our $DEBUG_RESULTSET = 0;
-our $DEBUG_MAPPING   = 0;
+our $DEBUG_MAPPING   = $ENV{'CRUD_MAP_TRACE'} || 0;
 
 =head
   making up the return array with results which can be a mixin

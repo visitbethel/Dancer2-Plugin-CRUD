@@ -10,6 +10,8 @@ our $AUTHORITY = 'KAAN';
 our $VERSION   = '0.01';
 our $logger    = Dancer2::Logger::Console->new;
 
+our $DEBUG_MAPPING = $ENV{'CRUD_MAP_TRACE'} || 0;
+
 has mapping => (
                  is      => 'ro',
                  default => sub { return {} }
@@ -20,7 +22,7 @@ sub _register_map {
   my ( $self, $entity, $map ) = @_;
   if ( $map and $entity and not $self->mapping->{$entity} ) {
     $self->mapping->{$entity} = $map;
-    print "...[CRUD] registering new model entity '$entity'.\n";
+    print "...[CRUD] registering new model entity '$entity'.\n" if $DEBUG_MAPPING;
     
   }
   else {
