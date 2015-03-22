@@ -15,7 +15,7 @@ our $AUTHORITY         = 'KAAN';
 our $VERSION           = '0.01';
 our $DEFAULT_PAGE_SIZE = 5;
 our $DEBUG_RESULTSET   = 0;
-our $DEBUG_MAPPING     = 0;
+our $DEBUG_MAPPING     = 1;
 our $logger            = Dancer2::Logger::Console->new;
 
 =head
@@ -106,12 +106,13 @@ THe options are defined in the ng-grid on the controller.
 
 sub get_lookups {
 	my ( $self, $store, $table, $map, $where, $columns ) = @_;
-	
+
 	unless ($map) {
-		carp( "missing mapping for lookup of " . $table );
+		DBIx::Class::Exception->throw(
+			"missing mapping for lookup of " . $table );
 	}
-	
-	my $columm_map = $columns ? { columns => $columns } : $columns;
+
+	my $columm_map = $columns ? { columns => $columns } : undef;
 	return &map_fields( $map,
 		$store->resultset($table)->search( $where, $columm_map ) );
 }
@@ -211,8 +212,7 @@ sub pagination {
 	my %params = $self->params;
 	&logf( "PARAMS:" . Dumper( \%params ) );
 	unless ($mapping) {
-		die( "missing mapping for " . $table );
-		return 1;
+		DBIx::Class::Exception->throw( "missing mapping for " . $table );
 	}
 
 	# deserialize the filter, page and sort options.
@@ -239,15 +239,33 @@ sub pagination {
 	my %sortrev = ();
 	foreach my $r ( keys %{$mapping} ) {
 		if ( ref $mapping->{$r} eq 'HASH' ) {
+
 			foreach my $sr ( keys %{ $mapping->{$r} } ) {
 				$sortrev{ sprintf "%s.%s", $r, $mapping->{$r}->{$sr} } = $sr;
 			}
+		}
+		elsif ( ref $mapping->{$r} eq 'ARRAY' ) {
+				my $key = "me";
+			foreach my $elem ( @{ $mapping->{$r} } ) {
+				if (ref $elem eq '' ) { $key = $elem; }
+				
+				next unless ref($elem) eq 'HASH';
+				my %elem = reverse %$elem;
+
+#printf "%20s[%s] => %s -> %s\n", $r,$mapping->{$r}, $root, $dbfield ? $dbfield : 'NA';
+				print Dumper( \%elem );
+				foreach my $k ( keys %elem ) {
+					$sortrev{ sprintf "%s.%s", $r, $k } = sprintf "%s.%s", $key, $elem{$k};
+				}
+			}
+
 		}
 		else {
 			$sortrev{ $mapping->{$r} } = $r;
 		}
 	}
-	#print "SORTREV", Dumper( \%sortrev );
+
+	print "SORTREV", Dumper( \%sortrev );
 
 	foreach my $expr (@$field) {
 		my ( $k, $dbfield ) = split /\./, $expr;    #/
@@ -353,8 +371,7 @@ sub pagination {
 	#@order = map { $mapping->{$_} . ' ASC' } @$sortFields if $sortFields;
 	foreach my $fld ( @{$sortFields} ) {
 		if ( $fld && $sortrev{$fld} ) {
-			my $fld = sprintf "%s %s", $sortrev{$fld},
-			  $sortDirection->[0];
+			my $fld = sprintf "%s %s", $sortrev{$fld}, $sortDirection->[0];
 			push @order, $fld;
 		}
 		else {
@@ -362,6 +379,7 @@ sub pagination {
 			print Dumper( \%sortrev );
 		}
 	}
+
 	#print Dumper( ">>>sorting:", $sort, $sortFields, \@order );
 
 	my %options = (

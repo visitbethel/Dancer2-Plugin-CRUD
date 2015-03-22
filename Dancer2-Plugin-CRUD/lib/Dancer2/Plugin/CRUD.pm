@@ -44,6 +44,10 @@ sub create_rec {
   my ( $self, $store, $table, $mapping, $record_json ) = @_;
   my $class  = $store->resultset($table);
   my ($pk)   = $class->result_source->primary_columns();
+  unless ($mapping) {
+     DBIx::Class::Exception->throw("Mapping for $table is misconfigured!");
+    
+  }
   my %fields = %{$mapping};
 
   %fields = reverse %fields;
