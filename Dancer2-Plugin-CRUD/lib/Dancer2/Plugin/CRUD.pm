@@ -76,7 +76,12 @@ sub create_rec {
 
     # apply complex changes first.
     if (blessed($_record) and $_record->can('complex_update_or_create') ) {
-      $_record->complex_update_or_create( $record_json, $mapping );
+      my $removal = $_record->complex_update_or_create( $record_json, $mapping );
+      # remove all processed references that are 
+      # up for removal from the original JSON request.
+      foreach (@$removal) { 
+      	delete $record_json->{$_};
+      }
     }
     $self->process_rec( $_record, $mapping, $record_json );
     return $_record;
