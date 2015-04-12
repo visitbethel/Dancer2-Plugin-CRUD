@@ -79,8 +79,10 @@ sub create_rec {
       my $removal = $_record->complex_update_or_create( $record_json, $mapping );
       # remove all processed references that are 
       # up for removal from the original JSON request.
-      foreach (@$removal) { 
-      	delete $record_json->{$_};
+      if ($removal and ref($removal) eq 'ARRAY') {
+	      foreach (@$removal) { 
+	      	delete $record_json->{$_};
+	      }
       }
     }
     $self->process_rec( $_record, $mapping, $record_json );

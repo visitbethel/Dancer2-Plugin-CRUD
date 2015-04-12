@@ -424,7 +424,7 @@ sub merge_pagers {
 }
 
 sub logf {
-	printf @_ if $DEBUG_MAPPING;
+	eval { printf @_ } if $DEBUG_MAPPING;
 }
 
 register get_lookups  => \&get_lookups;
