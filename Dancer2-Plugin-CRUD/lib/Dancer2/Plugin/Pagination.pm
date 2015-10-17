@@ -371,7 +371,10 @@ sub pagination {
 	#@order = map { $mapping->{$_} . ' ASC' } @$sortFields if $sortFields;
 	foreach my $fld ( @{$sortFields} ) {
 		if ( $fld && $sortrev{$fld} ) {
-			my $fld = sprintf "%s %s", $sortrev{$fld}, $sortDirection->[0];
+			my $fld = sprintf "LOWER(%s) %s", $sortrev{$fld}, $sortDirection->[0];
+#			if ($ignorecase) {
+#                $fld = sprintf "%s %s", $sortrev{$fld}, $sortDirection->[0];
+#			}
 			push @order, $fld;
 		}
 		else {

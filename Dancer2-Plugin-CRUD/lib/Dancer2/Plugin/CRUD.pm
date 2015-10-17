@@ -72,7 +72,7 @@ sub create_rec {
   my $transactionref = sub {
     my $_record = $store->resultset($table)->create( \%new_record );
 
-    #&logf( Dumper($_record));
+    &logf( Dumper($!));
 
     # apply complex changes first.
     if (blessed($_record) and $_record->can('complex_update_or_create') ) {
@@ -85,6 +85,7 @@ sub create_rec {
 	      }
       }
     }
+    #&logf("processing record: ". $record_json);
     $self->process_rec( $_record, $mapping, $record_json );
     return $_record;
   };
